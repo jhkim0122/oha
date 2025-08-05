@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "212882170484",
+    "project_id": "ohaapp-8d61d",
+    "storage_bucket": "ohaapp-8d61d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:212882170484:android:ba71d8459e8b6e95fca721",
+        "android_client_info": {
+          "package_name": "com.zzu.oha"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDEnRLQDc8vH7vTYzEMJaE_uh0bfkOrY-w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
