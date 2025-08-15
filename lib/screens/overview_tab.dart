@@ -1,4 +1,4 @@
-import 'dart:async';
+import 'dart:async' as dart_async;
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -50,10 +50,10 @@ class OverviewTab extends HookConsumerWidget {
     }, [isAnimating.value, isShaken.value]);
 
     useEffect(() {
-      Future.delayed(const Duration(milliseconds: 500), () {
+        Future.delayed(const Duration(milliseconds: 500), () {
         if (!isAnimating.value && !isShaken.value) {
           Fluttertoast.showToast(
-            msg: "화면을 Tap 해보세요!",
+            msg: "화면을 탭하거나 기기를 흔들어보세요!",
             toastLength: Toast.LENGTH_LONG,
             gravity: ToastGravity.CENTER,
             backgroundColor: Colors.black54,
@@ -72,6 +72,7 @@ class OverviewTab extends HookConsumerWidget {
             isShaken.value = true;
             showShakeMessage.value = false;
             isAnimating.value = true;
+            game.startAnimation();
           }
         });
         return subscription.cancel;
@@ -104,7 +105,7 @@ class GravityGame extends Forge2DGame {
     required this.emotions,
     required this.iconSetId,
     this.onAnimationComplete,
-  }) : super(gravity: Vector2(0, 64), zoom: 1.0);
+  }) : super(gravity: Vector2(0, 160), zoom: 1.0);
 
   int _landedCount = 0;
   int _totalItems = 0;
@@ -112,6 +113,7 @@ class GravityGame extends Forge2DGame {
   bool _animationCompleted = false;
   double _settleTimer = 0.0;
   static const double _settleDelay = 1.0; // 1초간 정지 상태 유지 후 완료로 판단
+  dart_async.Timer? _forceResetTimer; // 애니메이션 시작 후 10초 강제 복귀 타이머
 
   @override
   Future<void> onLoad() async {
@@ -181,6 +183,13 @@ class GravityGame extends Forge2DGame {
     _animationCompleted = false;
     _settleTimer = 0.0;
     _landedCount = 0;
+    _forceResetTimer?.cancel();
+    _forceResetTimer = dart_async.Timer(const Duration(seconds: 15), () {
+      if (!_animationStarted) return;
+      _animationCompleted = true;
+      onAnimationComplete?.call();
+      _resetToInitialState();
+    });
     
     final bodies = children.whereType<FallingEmotionBody>().toList();
     for (final body in bodies) {
@@ -224,6 +233,7 @@ class GravityGame extends Forge2DGame {
       if (_settleTimer >= _settleDelay) {
         print('🎯 애니메이션 완전 완료! 모든 아이템이 정지했습니다.');
         _animationCompleted = true;
+        _forceResetTimer?.cancel();
         onAnimationComplete?.call();
         
         // 3초 후 초기 상태로 복원
@@ -237,6 +247,8 @@ class GravityGame extends Forge2DGame {
   }
 
   void _resetToInitialState() {
+    _forceResetTimer?.cancel();
+    _forceResetTimer = null;
     final bodies = children.whereType<FallingEmotionBody>().toList();
     
     for (final body in bodies) {
@@ -342,7 +354,8 @@ class FallingEmotionBody extends BodyComponent<GravityGame> {
     body.setType(BodyType.dynamic);
     final randomX = (Random().nextDouble() - 0.5) * 1.0;
     body.linearVelocity = Vector2(randomX, 0);
-    body.angularVelocity = (Random().nextDouble() - 0.5) * 0.5;
+    final randomAngular = (Random().nextDouble() - 0.5) * 2.0; // -3.0 ~ 3.0 rad/s
+    body.angularVelocity = randomAngular;
   }
 
   void resetToInitialPosition() {
@@ -407,16 +420,16 @@ class FallingEmotionBody extends BodyComponent<GravityGame> {
     final bodyDef = BodyDef()
       ..position = position
       ..type = isStatic ? BodyType.static : BodyType.dynamic
-      ..linearDamping = 0.1
-      ..angularDamping = 0.8;
+      ..linearDamping = 0.05
+      ..angularDamping = 0.7;
     final body = world.createBody(bodyDef);
     
     final shape = CircleShape()..radius = size / 2;
     
     final fixtureDef = FixtureDef(shape)
-      ..density = 0.1
-      ..restitution = 0.3
-      ..friction = 0.7;
+      ..density = 0.01
+      ..restitution =0.85
+      ..friction = 0.1;
 
     body.createFixture(fixtureDef);
     return body;
